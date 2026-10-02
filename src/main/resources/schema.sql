@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS posts (
     title VARCHAR(255) NOT NULL,
     text TEXT NOT NULL,
     likes_count INTEGER DEFAULT 0,
-    comments_count INTEGER DEFAULT 0
+    comments_count INTEGER DEFAULT 0,
+    image_name VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS comments (

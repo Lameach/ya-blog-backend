@@ -7,14 +7,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration;
+import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
 import javax.sql.DataSource;
 
 @Configuration
-public class DataSourceConfiguration {
+@EnableJdbcRepositories(basePackages = "ru.yandex.practicum.repository")
+public class DataSourceConfiguration extends AbstractJdbcConfiguration {
 
     @Bean
     public DataSource dataSource(
@@ -34,6 +39,16 @@ public class DataSourceConfiguration {
     @Bean
     public JdbcTemplate jdbcTemplate(DataSource dataSource) {
         return new JdbcTemplate(dataSource);
+    }
+
+    @Bean
+    public NamedParameterJdbcOperations namedParameterJdbcOperations (DataSource dataSource) {
+        return new NamedParameterJdbcTemplate(dataSource);
+    }
+
+    @Bean
+    public org.springframework.jdbc.datasource.DataSourceTransactionManager transactionManager(DataSource dataSource) {
+        return new org.springframework.jdbc.datasource.DataSourceTransactionManager(dataSource);
     }
 
     @EventListener
