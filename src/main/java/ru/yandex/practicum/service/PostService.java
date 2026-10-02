@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.dto.PostCreateDto;
 import ru.yandex.practicum.dto.PostDto;
+import ru.yandex.practicum.dto.PostEditDto;
 import ru.yandex.practicum.dto.PostPageDto;
 import ru.yandex.practicum.model.Post;
 import ru.yandex.practicum.model.Tag;
@@ -77,10 +78,45 @@ public class PostService {
         return mapToDto(post.get());
     }
 
+    @Transactional
+    public PostDto editPost(PostEditDto editDto) {
+        Optional<Post> optionalPost = postRepository.findById(editDto.getId());
+        if (optionalPost.isEmpty()) {
+            throw new RuntimeException("Пост с id " + editDto.getId() + " не найден");
+        }
+        Post post = optionalPost.get();
+
+        post.setTitle(editDto.getTitle());
+        post.setText(editDto.getText());
+
+        if (editDto.getTags() != null) {
+            editDto.getTags().forEach(post::addTag);
+        }
+        return mapToDto(postRepository.save(post));
+    }
+
+    @Transactional
+    public void deletePost(Long id) {
+        postRepository.deleteById(id);
+    }
+
+    @Transactional
+    public Integer incrementLikesCount(Long id) {
+        Optional<Post> optionalPost = postRepository.findById(id);
+        if (optionalPost.isEmpty()) {
+            throw new RuntimeException("Пост с id " + id + " не найден");
+        }
+        Post post = optionalPost.get();
+        int newLikesCount = post.getLikesCount() + 1;
+        post.setLikesCount(newLikesCount);
+        return newLikesCount;
+    }
+
     public String getImageFileNameById(Long id) {
         return postRepository.getImageFileNameById(id);
     }
 
+    @Transactional
     public void updateImageName(Long id, String imageName) {
         postRepository.updateImageName(id, imageName);
     }

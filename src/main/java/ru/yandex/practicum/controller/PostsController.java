@@ -6,10 +6,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import ru.yandex.practicum.dto.PostCreateDto;
-import ru.yandex.practicum.dto.PostDto;
+import ru.yandex.practicum.dto.*;
+import ru.yandex.practicum.service.CommentService;
 import ru.yandex.practicum.service.FilesService;
 import ru.yandex.practicum.service.PostService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -18,6 +20,7 @@ public class PostsController {
 
     private final PostService postService;
     private final FilesService filesService;
+    private final CommentService commentService;
 
     @GetMapping
     public Object getPosts(
@@ -31,6 +34,21 @@ public class PostsController {
     public Object getPost(
             @PathVariable("id") long id) {
         return postService.getPostById(id);
+    }
+
+    @PutMapping("/{id}")
+    public Object getPost(@RequestBody PostEditDto editedPost) {
+        return postService.editPost(editedPost);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deletePost(@PathVariable("id") Long id) {
+        postService.deletePost(id);
+    }
+
+    @PostMapping("/{id}/likes")
+    public Integer incrementLikesCount(@PathVariable("id") Long id) {
+        return postService.incrementLikesCount(id);
     }
 
     @PutMapping("/{id}/image")
@@ -47,6 +65,26 @@ public class PostsController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(file);
+    }
+
+    @GetMapping("/{postId}/comments")
+    public List<CommentDto> getAllComments(@PathVariable("postId") Long postId) {
+        return commentService.getAllComments(postId);
+    }
+
+    @PostMapping("/{postId}/comments")
+    public CommentDto createComment(@RequestBody CommentCreateDto newComment) {
+        return commentService.createComment(newComment);
+    }
+
+    @PutMapping("/{postId}/comments/{id}")
+    public CommentDto createComment(@RequestBody CommentDto editComment) {
+        return commentService.editComment(editComment);
+    }
+
+    @DeleteMapping("/{postId}/comments/{id}")
+    public void createComment(@PathVariable("id") Long id) {
+        commentService.deleteComment(id);
     }
 
 
