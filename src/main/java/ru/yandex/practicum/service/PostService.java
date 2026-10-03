@@ -89,6 +89,7 @@ public class PostService {
         post.setTitle(editDto.getTitle());
         post.setText(editDto.getText());
 
+        post.getTags().clear();
         if (editDto.getTags() != null) {
             editDto.getTags().forEach(post::addTag);
         }
@@ -102,14 +103,11 @@ public class PostService {
 
     @Transactional
     public Integer incrementLikesCount(Long id) {
-        Optional<Post> optionalPost = postRepository.findById(id);
-        if (optionalPost.isEmpty()) {
+        if (!postRepository.existsById(id)) {
             throw new RuntimeException("Пост с id " + id + " не найден");
         }
-        Post post = optionalPost.get();
-        int newLikesCount = post.getLikesCount() + 1;
-        post.setLikesCount(newLikesCount);
-        return newLikesCount;
+        postRepository.incrementLikesCount(id);
+        return postRepository.findById(id).get().getLikesCount();
     }
 
     public String getImageFileNameById(Long id) {

@@ -7,6 +7,7 @@ import ru.yandex.practicum.dto.CommentCreateDto;
 import ru.yandex.practicum.dto.CommentDto;
 import ru.yandex.practicum.model.Comment;
 import ru.yandex.practicum.repository.CommentRepository;
+import ru.yandex.practicum.repository.PostRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +16,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CommentService {
     private final CommentRepository commentRepository;
+    private final PostRepository postRepository;
 
     public List<CommentDto> getAllComments(Long postId) {
         return commentRepository.getAllCommentsByPostId(postId).stream().map(this::mapToDto).toList();
@@ -27,6 +29,7 @@ public class CommentService {
         comment.setPostId(createDto.getPostId());
 
         Comment savedComment = commentRepository.save(comment);
+        postRepository.incrementCommentsCount(createDto.getPostId());
         return mapToDto(savedComment);
     }
 
@@ -46,6 +49,7 @@ public class CommentService {
     @Transactional
     public void deleteComment(Long id) {
         commentRepository.deleteById(id);
+        postRepository.decrementCommentsCount(id);
     }
 
     private CommentDto mapToDto(Comment comment) {

@@ -22,4 +22,16 @@ public interface PostRepository extends CrudRepository<Post, Long>, PagingAndSor
     @Modifying
     @Query("UPDATE posts SET image_name = :imageName WHERE id = :id")
     void updateImageName(@Param("id") Long id, @Param("imageName") String imageName);
+
+    @Modifying
+    @Query("UPDATE posts SET likes_count = likes_count + 1 WHERE id = :id")
+    void incrementLikesCount(@Param("id") Long id);
+
+    @Modifying
+    @Query("UPDATE posts SET comments_count = comments_count + 1 WHERE id = :id")
+    void incrementCommentsCount(@Param("id") Long id);
+
+    @Modifying
+    @Query("UPDATE posts SET comments_count = comments_count - 1 WHERE id = :id")
+    void decrementCommentsCount(@Param("id") Long id);
 }
