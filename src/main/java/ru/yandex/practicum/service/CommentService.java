@@ -33,11 +33,18 @@ public class CommentService {
         return mapToDto(savedComment);
     }
 
+    public CommentDto getCommentById(Long id) {
+        if (!commentRepository.existsById(id)) {
+            throw new RuntimeException("Комментарий с id " + id + " не найден");
+        }
+        return mapToDto(commentRepository.findById(id).get());
+    }
+
     @Transactional
     public CommentDto editComment(CommentDto editDto) {
         Optional<Comment> optionalComment = commentRepository.findById(editDto.getId());
         if (optionalComment.isEmpty()) {
-            throw new RuntimeException("Пост с id " + editDto.getId() + " не найден");
+            throw new RuntimeException("Комментарий с id " + editDto.getId() + " не найден");
         }
         Comment comment = optionalComment.get();
 
@@ -48,8 +55,14 @@ public class CommentService {
 
     @Transactional
     public void deleteComment(Long id) {
+        if (!commentRepository.existsById(id)) {
+            throw new RuntimeException("Комментарий с id " + id + " не найден");
+        }
+
+        Long postId = commentRepository.findById(id).get().getPostId();
+
         commentRepository.deleteById(id);
-        postRepository.decrementCommentsCount(id);
+        postRepository.decrementCommentsCount(postId);
     }
 
     private CommentDto mapToDto(Comment comment) {

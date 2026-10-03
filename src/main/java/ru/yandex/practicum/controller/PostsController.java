@@ -37,7 +37,7 @@ public class PostsController {
     }
 
     @PutMapping("/{id}")
-    public Object getPost(@RequestBody PostEditDto editedPost) {
+    public Object editPost(@RequestBody PostEditDto editedPost) {
         return postService.editPost(editedPost);
     }
 
@@ -78,12 +78,17 @@ public class PostsController {
     }
 
     @PutMapping("/{postId}/comments/{id}")
-    public CommentDto createComment(@RequestBody CommentDto editComment) {
+    public CommentDto editComment(@RequestBody CommentDto editComment) {
         return commentService.editComment(editComment);
     }
 
+    @GetMapping("/{postId}/comments/{id}")
+    public CommentDto getComment(@PathVariable("id") Long id) {
+        return commentService.getCommentById(id);
+    }
+
     @DeleteMapping("/{postId}/comments/{id}")
-    public void createComment(@PathVariable("id") Long id) {
+    public void deleteComment(@PathVariable("id") Long id) {
         commentService.deleteComment(id);
     }
 
