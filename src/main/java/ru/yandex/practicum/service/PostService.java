@@ -1,8 +1,10 @@
 package ru.yandex.practicum.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practicum.dto.PostCreateDto;
 import ru.yandex.practicum.dto.PostDto;
 import ru.yandex.practicum.dto.PostEditDto;
@@ -19,6 +21,7 @@ import java.util.Optional;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final FilesService filesService;
 
     @Transactional
     public PostDto createPost(PostCreateDto createDto) {
@@ -98,7 +101,11 @@ public class PostService {
 
     @Transactional
     public void deletePost(Long id) {
+        String imageName = postRepository.getImageFileNameById(id);
         postRepository.deleteById(id);
+        if (imageName != null) {
+            filesService.deleteFile(imageName);
+        }
     }
 
     @Transactional
@@ -114,9 +121,25 @@ public class PostService {
         return postRepository.getImageFileNameById(id);
     }
 
+    public String uploadImageForPost(MultipartFile image, Long id) {
+        String fileName = filesService.upload(image);
+        this.updateImageName(id, fileName);
+        return fileName;
+    }
+
     @Transactional
-    public void updateImageName(Long id, String imageName) {
-        postRepository.updateImageName(id, imageName);
+    public void updateImageName(Long id, String newImageName) {
+        String oldImageName = postRepository.getImageFileNameById(id);
+        postRepository.updateImageName(id, newImageName);
+
+        if (oldImageName != null && !oldImageName.equals(newImageName)) {
+            filesService.deleteFile(oldImageName);
+        }
+    }
+
+    public Resource downloadImageByPostId(Long id) {
+        String filename = this.getImageFileNameById(id);
+        return  filesService.download(filename);
     }
 
     private PostDto mapToDto (Post post) {

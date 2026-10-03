@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.yandex.practicum.dto.*;
 import ru.yandex.practicum.service.CommentService;
-import ru.yandex.practicum.service.FilesService;
 import ru.yandex.practicum.service.PostService;
 
 import java.util.List;
@@ -19,7 +18,6 @@ import java.util.List;
 public class PostsController {
 
     private final PostService postService;
-    private final FilesService filesService;
     private final CommentService commentService;
 
     @GetMapping
@@ -53,15 +51,12 @@ public class PostsController {
 
     @PutMapping("/{id}/image")
     public String uploadFile(@RequestParam("image") MultipartFile image, @PathVariable("id") Long id) {
-        String fileName = filesService.upload(image);
-        postService.updateImageName(id, fileName);
-        return fileName;
+        return postService.uploadImageForPost(image, id);
     }
 
     @GetMapping("/{id}/image")
     public ResponseEntity<Resource> downloadFile(@PathVariable("id") Long id) {
-        String filename = postService.getImageFileNameById(id);
-        Resource file = filesService.download(filename);
+        Resource file = postService.downloadImageByPostId(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(file);
