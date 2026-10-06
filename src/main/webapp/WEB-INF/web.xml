@@ -35,7 +35,7 @@
     </context-param>
     <context-param>
         <param-name>contextConfigLocation</param-name>
-        <param-value>ru.yandex.practicum.WebConfiguration</param-value>
+        <param-value>ru.yandex.practicum.configuration.WebConfiguration</param-value>
     </context-param>
 
 
@@ -48,7 +48,7 @@
         </init-param>
         <init-param>
             <param-name>contextConfigLocation</param-name>
-            <param-value>ru.yandex.practicum.WebConfiguration</param-value>
+            <param-value>ru.yandex.practicum.configuration.WebConfiguration</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
         <multipart-config>
