@@ -9,12 +9,21 @@ import ru.yandex.practicum.dto.PostCreateDto;
 import ru.yandex.practicum.dto.PostDto;
 import ru.yandex.practicum.dto.PostEditDto;
 import ru.yandex.practicum.dto.PostPageDto;
+import ru.yandex.practicum.exception.BadRequestException;
+import ru.yandex.practicum.exception.NotFoundException;
 import ru.yandex.practicum.model.Post;
 import ru.yandex.practicum.model.Tag;
 import ru.yandex.practicum.repository.PostRepository;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +34,8 @@ public class PostService {
 
     @Transactional
     public PostDto createPost(PostCreateDto createDto) {
+        requireText(createDto.getTitle(), createDto.getText());
+
         Post post = new Post();
         post.setTitle(createDto.getTitle());
         post.setText(createDto.getText());
@@ -40,15 +51,36 @@ public class PostService {
     }
 
     public PostPageDto getPosts(String search, int pageNumber, int pageSize) {
-        String searchTerm = search == null ? "" : search;
+        if (pageNumber < 1 || pageSize < 1) {
+            throw new BadRequestException("Номер и размер страницы должны быть больше нуля");
+        }
 
+        ParsedSearch parsed = parseSearch(search);
         int offset = (pageNumber - 1) * pageSize;
 
-        List<Post> posts = postRepository.searchPosts(searchTerm, pageSize, offset);
-        int totalPosts = postRepository.countPosts(searchTerm);
+        List<Long> ids;
+        int totalPosts;
+        if (parsed.tags().isEmpty()) {
+            ids = postRepository.findIdsByTitle(parsed.title(), pageSize, offset);
+            totalPosts = postRepository.countByTitle(parsed.title());
+        } else {
+            ids = postRepository.findIdsByTitleAndTags(
+                    parsed.title(), parsed.tags(), parsed.tags().size(), pageSize, offset);
+            totalPosts = postRepository.countByTitleAndTags(
+                    parsed.title(), parsed.tags(), parsed.tags().size());
+        }
+
+        Map<Long, Post> postsById = new HashMap<>();
+        postRepository.findAllById(ids).forEach(post -> postsById.put(post.getId(), post));
+        List<Post> posts = ids.stream()
+                .map(postsById::get)
+                .filter(Objects::nonNull)
+                .toList();
 
         int lastPage = (int) Math.ceil((double) totalPosts / pageSize);
-        if (lastPage == 0) lastPage = 1;
+        if (lastPage == 0) {
+            lastPage = 1;
+        }
 
         List<PostDto> postDtos = posts.stream()
                 .map(post -> {
@@ -76,16 +108,17 @@ public class PostService {
     public PostDto getPostById(Long id) {
         Optional<Post> post = postRepository.findById(id);
         if (post.isEmpty()) {
-            throw new RuntimeException("Пост с id " + id + " не найден");
+            throw new NotFoundException("Пост с id " + id + " не найден");
         }
         return mapToDto(post.get());
     }
 
     @Transactional
     public PostDto editPost(PostEditDto editDto) {
+        requireText(editDto.getTitle(), editDto.getText());
         Optional<Post> optionalPost = postRepository.findById(editDto.getId());
         if (optionalPost.isEmpty()) {
-            throw new RuntimeException("Пост с id " + editDto.getId() + " не найден");
+            throw new NotFoundException("Пост с id " + editDto.getId() + " не найден");
         }
         Post post = optionalPost.get();
 
@@ -101,6 +134,9 @@ public class PostService {
 
     @Transactional
     public void deletePost(Long id) {
+        if (!postRepository.existsById(id)) {
+            throw new NotFoundException("Пост с id " + id + " не найден");
+        }
         String imageName = postRepository.getImageFileNameById(id);
         postRepository.deleteById(id);
         if (imageName != null) {
@@ -111,7 +147,7 @@ public class PostService {
     @Transactional
     public Integer incrementLikesCount(Long id) {
         if (!postRepository.existsById(id)) {
-            throw new RuntimeException("Пост с id " + id + " не найден");
+            throw new NotFoundException("Пост с id " + id + " не найден");
         }
         postRepository.incrementLikesCount(id);
         return postRepository.findById(id).get().getLikesCount();
@@ -122,6 +158,9 @@ public class PostService {
     }
 
     public String uploadImageForPost(MultipartFile image, Long id) {
+        if (!postRepository.existsById(id)) {
+            throw new NotFoundException("Пост с id " + id + " не найден");
+        }
         String fileName = filesService.upload(image);
         this.updateImageName(id, fileName);
         return fileName;
@@ -138,18 +177,55 @@ public class PostService {
     }
 
     public Resource downloadImageByPostId(Long id) {
+        if (!postRepository.existsById(id)) {
+            throw new NotFoundException("Пост с id " + id + " не найден");
+        }
         String filename = this.getImageFileNameById(id);
-        return  filesService.download(filename);
+        if (filename == null || filename.isBlank()) {
+            throw new NotFoundException("У поста нет изображения");
+        }
+        return filesService.download(filename);
     }
 
-    private PostDto mapToDto (Post post) {
+    private void requireText(String title, String text) {
+        if (title == null || title.isBlank() || text == null || text.isBlank()) {
+            throw new BadRequestException("Заголовок и текст поста не могут быть пустыми");
+        }
+    }
+
+    private ParsedSearch parseSearch(String search) {
+        List<String> titleWords = new ArrayList<>();
+        Set<String> tags = new LinkedHashSet<>();
+        if (search != null && !search.isBlank()) {
+            for (String word : search.trim().split("\\s+")) {
+                if (word.isEmpty()) {
+                    continue;
+                }
+                if (word.startsWith("#")) {
+                    String tag = word.substring(1).trim();
+                    if (!tag.isEmpty()) {
+                        tags.add(tag.toLowerCase(Locale.ROOT));
+                    }
+                } else {
+                    titleWords.add(word);
+                }
+            }
+        }
+        return new ParsedSearch(String.join(" ", titleWords), List.copyOf(tags));
+    }
+
+    private PostDto mapToDto(Post post) {
         PostDto postDto = new PostDto();
         postDto.setId(post.getId());
         postDto.setTitle(post.getTitle());
         postDto.setText(post.getText());
         postDto.setLikesCount(post.getLikesCount());
         postDto.setCommentsCount(post.getCommentsCount());
-        postDto.setTags(post.getTags().stream().map(Tag::getTag).toList());
+        Set<Tag> tags = post.getTags() == null ? Set.of() : post.getTags();
+        postDto.setTags(tags.stream().map(Tag::getTag).toList());
         return postDto;
+    }
+
+    private record ParsedSearch(String title, List<String> tags) {
     }
 }

@@ -10,11 +10,50 @@ import ru.yandex.practicum.model.Post;
 import java.util.List;
 
 public interface PostRepository extends CrudRepository<Post, Long>, PagingAndSortingRepository<Post, Long> {
-    @Query("SELECT * FROM posts WHERE title ILIKE '%' || :search || '%' OR text ILIKE '%' || :search || '%' ORDER BY id DESC LIMIT :limit OFFSET :offset")
-    List<Post> searchPosts(@Param("search") String search, @Param("limit") int limit, @Param("offset") int offset);
 
-    @Query("SELECT count(*) FROM posts WHERE title ILIKE '%' || :search || '%' OR text ILIKE '%' || :search || '%'")
-    int countPosts(@Param("search") String search);
+    @Query("""
+            SELECT id FROM posts
+            WHERE (:title = '' OR title ILIKE '%' || :title || '%')
+            ORDER BY id DESC
+            LIMIT :limit OFFSET :offset
+            """)
+    List<Long> findIdsByTitle(@Param("title") String title,
+                              @Param("limit") int limit,
+                              @Param("offset") int offset);
+
+    @Query("""
+            SELECT COUNT(*) FROM posts
+            WHERE (:title = '' OR title ILIKE '%' || :title || '%')
+            """)
+    int countByTitle(@Param("title") String title);
+
+    @Query("""
+            SELECT id FROM posts
+            WHERE (:title = '' OR title ILIKE '%' || :title || '%')
+              AND (
+                SELECT COUNT(DISTINCT LOWER(tag)) FROM tags
+                WHERE post_id = posts.id AND LOWER(tag) IN (:tags)
+              ) = :tagCount
+            ORDER BY id DESC
+            LIMIT :limit OFFSET :offset
+            """)
+    List<Long> findIdsByTitleAndTags(@Param("title") String title,
+                                     @Param("tags") List<String> tags,
+                                     @Param("tagCount") int tagCount,
+                                     @Param("limit") int limit,
+                                     @Param("offset") int offset);
+
+    @Query("""
+            SELECT COUNT(*) FROM posts
+            WHERE (:title = '' OR title ILIKE '%' || :title || '%')
+              AND (
+                SELECT COUNT(DISTINCT LOWER(tag)) FROM tags
+                WHERE post_id = posts.id AND LOWER(tag) IN (:tags)
+              ) = :tagCount
+            """)
+    int countByTitleAndTags(@Param("title") String title,
+                            @Param("tags") List<String> tags,
+                            @Param("tagCount") int tagCount);
 
     @Query("SELECT image_name FROM posts WHERE id = :id")
     String getImageFileNameById(@Param("id") Long id);

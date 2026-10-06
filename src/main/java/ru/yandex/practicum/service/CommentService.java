@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.dto.CommentCreateDto;
 import ru.yandex.practicum.dto.CommentDto;
+import ru.yandex.practicum.exception.BadRequestException;
+import ru.yandex.practicum.exception.NotFoundException;
 import ru.yandex.practicum.model.Comment;
 import ru.yandex.practicum.repository.CommentRepository;
 import ru.yandex.practicum.repository.PostRepository;
@@ -24,6 +26,13 @@ public class CommentService {
 
     @Transactional
     public CommentDto createComment(CommentCreateDto createDto) {
+        if (createDto.getText() == null || createDto.getText().isBlank()) {
+            throw new BadRequestException("Текст комментария не может быть пустым");
+        }
+        if (createDto.getPostId() == null || !postRepository.existsById(createDto.getPostId())) {
+            throw new NotFoundException("Пост с id " + createDto.getPostId() + " не найден");
+        }
+
         Comment comment = new Comment();
         comment.setText(createDto.getText());
         comment.setPostId(createDto.getPostId());
@@ -35,7 +44,7 @@ public class CommentService {
 
     public CommentDto getCommentById(Long id) {
         if (!commentRepository.existsById(id)) {
-            throw new RuntimeException("Комментарий с id " + id + " не найден");
+            throw new NotFoundException("Комментарий с id " + id + " не найден");
         }
         return mapToDto(commentRepository.findById(id).get());
     }
@@ -44,7 +53,10 @@ public class CommentService {
     public CommentDto editComment(CommentDto editDto) {
         Optional<Comment> optionalComment = commentRepository.findById(editDto.getId());
         if (optionalComment.isEmpty()) {
-            throw new RuntimeException("Комментарий с id " + editDto.getId() + " не найден");
+            throw new NotFoundException("Комментарий с id " + editDto.getId() + " не найден");
+        }
+        if (editDto.getText() == null || editDto.getText().isBlank()) {
+            throw new BadRequestException("Текст комментария не может быть пустым");
         }
         Comment comment = optionalComment.get();
 
@@ -56,7 +68,7 @@ public class CommentService {
     @Transactional
     public void deleteComment(Long id) {
         if (!commentRepository.existsById(id)) {
-            throw new RuntimeException("Комментарий с id " + id + " не найден");
+            throw new NotFoundException("Комментарий с id " + id + " не найден");
         }
 
         Long postId = commentRepository.findById(id).get().getPostId();

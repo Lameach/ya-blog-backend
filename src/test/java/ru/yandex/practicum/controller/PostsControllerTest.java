@@ -158,6 +158,21 @@ class PostsControllerTest extends BaseIntegrationTest {
     }
 
     @Test
+    void shouldReturnNotFoundForMissingPost() throws Exception {
+        mockMvc.perform(get("/api/posts/999999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturnBadRequestForInvalidPage() throws Exception {
+        mockMvc.perform(get("/api/posts")
+                        .param("search", "")
+                        .param("pageNumber", "0")
+                        .param("pageSize", "5"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void shouldCreateCommentAndReturnJson() throws Exception {
         PostCreateDto createDto = new PostCreateDto();
         createDto.setTitle("Post for comments");

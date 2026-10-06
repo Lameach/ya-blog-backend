@@ -126,8 +126,53 @@ class PostServiceTest extends BaseIntegrationTest {
 
         PostPageDto page = postService.getPosts("Spring", 1, 10);
 
-        assertEquals(2, page.getPosts().size(), "Должно найтись 2 поста с упоминанием Spring");
+        assertEquals(1, page.getPosts().size(), "Ищется только название, не текст поста");
+        assertEquals("Spring Boot Test", page.getPosts().get(0).getTitle());
         assertFalse(page.isHasNext(), "Следующей страницы быть не должно");
+    }
+
+    @Test
+    void shouldReturnTagsInFeed() {
+        PostCreateDto createDto = new PostCreateDto();
+        createDto.setTitle("Пост с тегами");
+        createDto.setText("Текст");
+        createDto.setTags(List.of("java", "spring"));
+        postService.createPost(createDto);
+
+        PostPageDto page = postService.getPosts("", 1, 10);
+
+        assertEquals(1, page.getPosts().size());
+        assertEquals(2, page.getPosts().get(0).getTags().size());
+        assertTrue(page.getPosts().get(0).getTags().containsAll(List.of("java", "spring")));
+    }
+
+    @Test
+    void shouldFilterByTitleSubstringAndAllTags() {
+        PostCreateDto match = new PostCreateDto();
+        match.setTitle("Spring Boot");
+        match.setText("нет тега в тексте");
+        match.setTags(List.of("java", "spring"));
+        postService.createPost(match);
+
+        PostCreateDto titleOnly = new PostCreateDto();
+        titleOnly.setTitle("Spring Data");
+        titleOnly.setText("Текст");
+        titleOnly.setTags(List.of("java"));
+        postService.createPost(titleOnly);
+
+        PostCreateDto tagsOnly = new PostCreateDto();
+        tagsOnly.setTitle("Другое название");
+        tagsOnly.setText("Spring");
+        tagsOnly.setTags(List.of("java", "spring"));
+        postService.createPost(tagsOnly);
+
+        PostPageDto byTitleAndTag = postService.getPosts("Spring Boot #Java", 1, 10);
+        assertEquals(1, byTitleAndTag.getPosts().size());
+        assertEquals("Spring Boot", byTitleAndTag.getPosts().get(0).getTitle());
+
+        PostPageDto byBothTags = postService.getPosts("#java #spring", 1, 10);
+        assertEquals(2, byBothTags.getPosts().size());
+        assertTrue(byBothTags.getPosts().stream().map(PostDto::getTitle).noneMatch("Spring Data"::equals));
     }
 
     @Test
