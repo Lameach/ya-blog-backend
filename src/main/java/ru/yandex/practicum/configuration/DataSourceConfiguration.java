@@ -4,12 +4,12 @@ import org.postgresql.Driver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -19,6 +19,7 @@ import javax.sql.DataSource;
 
 @Configuration
 @EnableJdbcRepositories(basePackages = "ru.yandex.practicum.repository")
+@Profile("!test")
 public class DataSourceConfiguration extends AbstractJdbcConfiguration {
 
     @Bean
@@ -36,10 +37,6 @@ public class DataSourceConfiguration extends AbstractJdbcConfiguration {
         return dataSource;
     }
 
-    @Bean
-    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
-        return new JdbcTemplate(dataSource);
-    }
 
     @Bean
     public NamedParameterJdbcOperations namedParameterJdbcOperations (DataSource dataSource) {
