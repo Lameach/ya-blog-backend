@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
+import ru.yandex.practicum.exception.BadRequestException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,5 +56,37 @@ class FilesServiceTest {
         filesService.deleteFile("to_delete.txt");
 
         assertFalse(Files.exists(file), "Файл должен быть удален");
+    }
+
+    @Test
+    void shouldNotWriteOutsideUploadDir() throws Exception {
+        Path outside = tempDir.resolve("..").resolve("secret.txt").normalize();
+        Files.deleteIfExists(outside);
+
+        MockMultipartFile mockFile = new MockMultipartFile(
+                "image",
+                "../../secret.txt",
+                "text/plain",
+                "x".getBytes()
+        );
+
+        String savedFileName = filesService.upload(mockFile);
+
+        assertFalse(savedFileName.contains(".."));
+        assertTrue(Files.exists(tempDir.resolve(savedFileName)));
+        assertFalse(Files.exists(outside));
+    }
+
+    @Test
+    void shouldNotReadOrDeleteOutsideUploadDir() throws Exception {
+        Path outside = tempDir.resolve("..").resolve("secret-outside.txt").normalize();
+        Files.writeString(outside, "secret");
+        try {
+            assertThrows(BadRequestException.class, () -> filesService.download("../secret-outside.txt"));
+            assertThrows(BadRequestException.class, () -> filesService.deleteFile("../secret-outside.txt"));
+            assertEquals("secret", Files.readString(outside));
+        } finally {
+            Files.deleteIfExists(outside);
+        }
     }
 }
