@@ -8,13 +8,7 @@
 
 - **Java 21**
 
-- **Spring Framework**
-
-    - Spring MVC
-
-    - Spring Data JDBC
-
-    - Transaction Management
+- **Spring Boot 4**
 
 - **Databases**
 
@@ -22,7 +16,7 @@
 
   - **H2** — testing
 
-- **Build Tool:** Maven
+- **Build Tool:** Gradle
 
 - **Testing**
 
@@ -43,8 +37,8 @@
 Скопируйте шаблон конфигурации:
 
 ```bash
-cp src/main/resources/application-template.properties \
-src/main/resources/application.properties
+cp src/main/resources/application-template.yml \
+src/main/resources/application.yml
 ```
 
 ### 2. Настройка подключения к PostgreSQL
@@ -52,12 +46,12 @@ src/main/resources/application.properties
 Откройте файл:
 
 ```bash
-src/main/resources/application.properties
+src/main/resources/application.yml
 ```
 
 и укажите актуальные параметры подключения к вашей базе данных PostgreSQL.
 
-**Важно**: файл application.properties с реальными настройками добавлен в .gitignore и не попадает в систему контроля версий.
+**Важно**: файл application.yml с реальными настройками добавлен в .gitignore и не попадает в систему контроля версий.
 
 ## Сборка и запуск
 ### 1. Клонирование репозитория
@@ -71,66 +65,30 @@ cd ya-blog-backend
 Для запуска всех модульных и интеграционных тестов с использованием изолированной H2 Database выполните:
 
 ```bash
-mvn test
+./gradlew test
 ```
 
-Файл `application.properties` для `mvn test` не нужен: тесты берут настройки из `src/test/resources/application-test.properties`.
+Файл `application.yml` для `./gradlew test` не нужен: тесты берут настройки из `src/test/resources/application-test.yml`.
 
-### 3. Сборка WAR-пакета
+### 3. Сборка и дпелой
 
-Для сборки WAR-файла выполните:
+Для сборки JAR-файла выполните:
 
 ```bash
-mvn clean package
+./gradlew bootJar
 ```
-
 
 После успешной сборки архив будет доступен по адресу:
 
 ```bash
-target/ya-blog-backend-1.0-SNAPSHOT.war
+build/libs/ya-blog-backend.jar
 ```
 
-## Деплой в Apache Tomcat
-
-Для запуска приложения в сервлет-контейнере необходимо установить и настроить Apache Tomcat.
-
-Рекомендуется использовать Tomcat 10.1+, совместимый с Java 21.
-
-### Шаги деплоя
-
-Установите и настройте Apache Tomcat.
-
-Убедитесь, что параметры подключения к PostgreSQL доступны приложению.
-
-Скопируйте собранный WAR-файл:
+Запустите приложение стандартной командой Java:
 
 ```bash
-target/ya-blog-backend-1.0-SNAPSHOT.war
+java -jar build/libs/ya-blog-backend.jar
 ```
-
-
-в директорию:
-
-```bash
-<TOMCAT_HOME>/webapps/
-```
-
-Запустите Tomcat:
-
-Linux / macOS:
-
-```bash
-./bin/startup.sh
-```
-
-Windows:
-
-```bash
-.\bin\startup.bat
-```
-
-Tomcat автоматически развернёт приложение из WAR-файла.
 
 ## API
 ### Posts

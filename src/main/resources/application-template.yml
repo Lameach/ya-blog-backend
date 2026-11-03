@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: ya-blog-backend
+  datasource:
+    url:
+    username:
+    password:
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations:
